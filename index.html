@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flat Expense Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Flat Expense Tracker</h1>
+            <p>Manage and track shared expenses among flatmates.</p>
+        </header>
+
+        <div class="tabs-container" id="tabs-container">
+            <!-- Tabs will be generated here -->
+        </div>
+
+        <div id="content-area" class="content-area">
+            <h2 id="current-user-name">Select a User</h2>
+            <p id="current-user-greeting">Please select a user tab above to view or add expenses.</p>
+
+            <form id="expense-form" class="expense-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="item-name" class="form-label">Name of Good/Service</label>
+                        <input type="text" id="item-name" name="item-name" required
+                               class="form-input"
+                               placeholder="e.g., Groceries, Rent">
+                    </div>
+                    <div class="form-group">
+                        <label for="item-amount" class="form-label">Amount Spent (₹)</label>
+                        <input type="number" id="item-amount" name="item-amount" required min="0" step="0.01"
+                               class="form-input"
+                               placeholder="e.g., 1500.50">
+                    </div>
+                    <div>
+                        <button type="submit" class="button button-primary" style="width: 100%;">
+                            Add Expense
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div id="expenses-table-container" class="table-container">
+                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; color: #4b5563;">Your Expenses:</h3>
+                <div class="table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Good/Service</th>
+                                <th>Amount (₹)</th>
+                                <th>Date Added</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-list">
+                            <!-- Expense items will be generated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-expenses-message" class="empty-message">
+                    <svg class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    <h3 style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #1f2937;">No expenses yet</h3>
+                    <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">Get started by adding an expense above.</p>
+                </div>
+                <div class="total-container">
+                    <p class="total-text">Total Spent: <span id="total-amount" class="total-amount">₹0.00</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h2>Overall Summary</h2>
+            <div id="grand-total-summary">
+                <!-- User totals will be generated here -->
+            </div>
+            <div class="summary-divider"></div>
+            <p class="grand-total">Grand Total (All Users): <span id="grand-total-amount" class="grand-total-amount">₹0.00</span></p>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="report-modal-title">Report Expense Issue</h3>
+            <p class="modal-message" id="report-modal-message">Please describe the issue with this expense:</p>
+            
+            <form id="report-form" class="report-form">
+                <div class="form-group" style="margin-bottom: 1.25rem; position: relative; z-index: 5;">
+                    <label for="report-reason" class="form-label">Reason for Report</label>
+                    <div class="select-wrapper">
+                        <select id="report-reason" class="form-input" required>
+                            <option value="" disabled selected>-- Select Reason --</option>
+                            <option value="Wrong Amount">Wrong Amount</option>
+                            <option value="Wrong Date">Wrong Date</option>
+                            <option value="Duplicate Entry">Duplicate Entry</option>
+                            <option value="Not My Expense">Not My Expense</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="report-details" class="form-label">Additional Details</label>
+                    <textarea id="report-details" class="form-input" style="min-height: 120px; resize: vertical;" placeholder="Please provide more information about the issue..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="cancelReportBtn" class="button button-secondary">Cancel</button>
+                    <button type="submit" id="submitReportBtn" class="button button-primary">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success notification -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <div class="notification-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="notification-message" id="notification-message">Expense added successfully!</div>
+        </div>
+    </div>
+
+    <script>
+        // --- Application State and Configuration ---
+        const users = ["shuvam", "sonu", "sumit", "sunny", "rahul"];
+        let currentUser = null; // Holds the name of the currently selected user
+        let expensesData = {}; // Object to store expenses for all users, e.g., { "Sumit": [], "Shuvam": [] }
+        let itemToReport = null; // Stores {userId, itemId, itemName} for reporting
+        
+        // API URL - use your deployed script URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyA2UwPvfNy-soG_i6SI0vE6Ooy809BL3_H3GAmhGzStktljSPtOvuBqiBQNEolZ7dA/exec';
+
+        // --- DOM Elements ---
+        const tabContainer = document.getElementById('tabs-container');
+        const contentArea = document.getElementById('content-area');
+        const currentUserNameDisplay = document.getElementById('current-user-name');
+        const currentUserGreeting = document.getElementById('current-user-greeting');
+        const expenseForm = document.getElementById('expense-form');
+        const itemNameInput = document.getElementById('item-name');
+        const itemAmountInput = document.getElementById('item-amount');
+        const expensesTableContainer = document.getElementById('expenses-table-container');
+        const expensesList = document.getElementById('expenses-list');
+        const totalAmountDisplay = document.getElementById('total-amount');
+        const noExpensesMessage = document.getElementById('no-expenses-message');
+        const grandTotalSummary = document.getElementById('grand-total-summary');
+        const grandTotalAmountDisplay = document.getElementById('grand-total-amount');
+
+        // Report modal elements
+        const reportModal = document.getElementById('reportModal');
+        const reportModalTitle = document.getElementById('report-modal-title');
+        const reportModalMessage = document.getElementById('report-modal-message');
+        const reportForm = document.getElementById('report-form');
+        const reportReasonInput = document.getElementById('report-reason');
+        const reportDetailsInput = document.getElementById('report-details');
+        const submitReportBtn = document.getElementById('submitReportBtn');
+        const cancelReportBtn = document.getElementById('cancelReportBtn');
+        
+        // Notification elements
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadExpenses(); // Load expenses from Google Sheets
+            createTabs();       // Create user tabs
+            updateGrandTotalDisplay(); // Initial calculation of grand total
+            
+            // Optionally, select the first user by default
+            if (users.length > 0) {
+                selectUser(users[0]);
+            }
+        });
+
+        // --- Data management functions ---
+        async function loadExpenses() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("HTTP error:", response.status, errorText);
+                    throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log("Received data:", data);
+                
+                // Check if data contains an error property
+                if (data.error) {
+                    console.error("API returned error:", data.error);
+                    throw new Error(`API error: ${data.error}`);
+                }
+                
+                expensesData = data;
+
+                // Make sure all users have their arrays initialized
+                users.forEach(user => {
+                    if (!expensesData[user]) {
+                        expensesData[user] = [];
+                    }
+                });
+                
+                console.log("Loaded expenses data:", expensesData);
+                return true;
+
+            } catch (err) {
+                console.error("Error loading Google Sheet data:", err);
+                alert(`Failed to load data: ${err.message}. Check console for details.`);
+                
+                // Initialize empty data
+                expensesData = {};
+                users.forEach(user => expensesData[user] = []);
+                return false;
+            }
+        }
+
+        // Function to add expense to Google Sheets
+        async function addExpenseToSheet(userName, name, amount, date) {
+            try {
+                // Build form data - required for POST requests to Google Apps Script
+                const formData = new FormData();
+                formData.append('action', 'add');
+                formData.append('user', userName);
+                formData.append('name', name);
+                formData.append('amount', amount);
+                formData.append('date', date);
+                
+                // Make API call to add expense
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log("Expense added successfully:", result);
+                    return true;
+                } else {
+                    console.error("Failed to add expense:", result.error);
+                    alert(`Failed to add expense: ${result.error}`);
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error adding expense:", error);
+                alert(`Error adding expense: ${error.message}`);
+                return false;
+            }
+        }
+        
+        // --- UI Creation and Updates ---
+        function createTabs() {
+            // Creates a tab button for each user
+            tabContainer.innerHTML = ''; // Clear existing tabs
+            users.forEach(user => {
+                const tabButton = document.createElement('button');
+                tabButton.textContent = user;
+                tabButton.classList.add('tab-button');
+                tabButton.addEventListener('click', () => selectUser(user));
+                tabContainer.appendChild(tabButton);
+            });
+        }
+
+        function selectUser(userName) {
+            // Handles user selection, updates UI to show selected user's data
+            currentUser = userName;
+
+            // Update tab appearance
+            document.querySelectorAll('.tab-button').forEach(button => {
+                if (button.textContent === userName) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            // Update content area
+            currentUserNameDisplay.textContent = `${userName}'s Expenses`;
+            currentUserGreeting.classList.add('hidden'); // Hide initial greeting
+            expenseForm.style.display = 'block';
+            expensesTableContainer.style.display = 'block';
+            expenseForm.reset(); // Clear form fields
+            renderExpenses();    // Display expenses for the selected user
+        }
+
+        function renderExpenses() {
+            // Renders the list of expenses for the currently selected user
+            if (!currentUser || !expensesData[currentUser]) {
+                expensesList.innerHTML = ''; // Clear list if no user or no data
+                noExpensesMessage.style.display = 'block';
+                totalAmountDisplay.textContent = '₹0.00';
+                return;
+            }
+
+            const userExpenses = expensesData[currentUser];
+            expensesList.innerHTML = ''; // Clear previous items
+
+            if (userExpenses.length === 0) {
+                noExpensesMessage.style.display = 'block';
+            } else {
+                noExpensesMessage.style.display = 'none';
+                userExpenses.forEach((expense, index) => {
+                    const row = expensesList.insertRow();
+                    row.innerHTML = `
+                        <td>${escapeHTML(expense.name)}</td>
+                        <td>₹${parseFloat(expense.amount).toFixed(2)}</td>
+                        <td>${new Date(expense.date).toLocaleDateString()}</td>
+                        <td>
+                            <button onclick="openReportModal('${currentUser}', ${expense.id || expense.rowNumber}, '${escapeHTML(expense.name)}')" class="button-report" style="background: none; border: none; color: #4f46e5; cursor: pointer; font-weight: 600;">Report</button>
+                        </td>
+                    `;
+                });
+            }
+            updateTotalAmount(); // Recalculate and display total for current user
+            updateGrandTotalDisplay(); // Update overall summary
+        }
+
+        function updateTotalAmount() {
+            // Calculates and displays the total amount for the current user
+            if (!currentUser || !expensesData[currentUser]) {
+                totalAmountDisplay.textContent = '₹0.00';
+                return;
+            }
+            const total = expensesData[currentUser].reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+            totalAmountDisplay.textContent = `₹${total.toFixed(2)}`;
+        }
+
+        function updateGrandTotalDisplay() {
+            // Calculates and displays the grand total and individual user totals in the summary
+            grandTotalSummary.innerHTML = ''; // Clear previous summary
+            let grandTotal = 0;
+
+            users.forEach(user => {
+                const userTotal = (expensesData[user] || []).reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+                grandTotal += userTotal;
+
+                const userSummaryEl = document.createElement('div');
+                userSummaryEl.classList.add('summary-item');
+                userSummaryEl.innerHTML = `
+                    <span>${escapeHTML(user)}:</span>
+                    <span style="font-weight: 600;">₹${userTotal.toFixed(2)}</span>
+                `;
+                grandTotalSummary.appendChild(userSummaryEl);
+            });
+
+            grandTotalAmountDisplay.textContent = `₹${grandTotal.toFixed(2)}`;
+        }
+
+        // --- Event Handlers ---
+        expenseForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+            if (!currentUser) {
+                alert("Please select a user first.");
+                return;
+            }
+
+            const itemName = itemNameInput.value.trim();
+            const itemAmount = parseFloat(itemAmountInput.value);
+
+            if (itemName && !isNaN(itemAmount) && itemAmount > 0) {
+                // Show loading indicator
+                const submitButton = event.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.textContent = "Adding...";
+                submitButton.disabled = true;
+                
+                try {
+                    // Add to Google Sheets first
+                    const currentDate = new Date().toISOString();
+                    const success = await addExpenseToSheet(currentUser, itemName, itemAmount, currentDate);
+                    
+                    if (success) {
+                        // Add to local data if server update was successful
+                        await addExpense(currentUser, itemName, itemAmount);
+                        
+                        // Show success notification
+                        showNotification(`Expense "${itemName}" added successfully!`);
+                        
+                        // Clear form fields
+                        expenseForm.reset();
+                        itemNameInput.focus();
+                    }
+                } catch (error) {
+                    console.error("Error adding expense:", error);
+                    alert(`Error: ${error.message || "Failed to add expense. Please try again."}`);
+                } finally {
+                    // Reset UI
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }
+            } else {
+                // Basic validation feedback
+                if (!itemName) alert("Please enter the name of the good/service.");
+                if (isNaN(itemAmount) || itemAmount <= 0) alert("Please enter a valid positive amount.");
+            }
+        });
+
+        // Report form event handlers
+        reportForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+            
+            if (!itemToReport) {
+                alert("No expense selected for reporting.");
+                return;
+            }
+            
+            const reason = reportReasonInput.value.trim();
+            const details = reportDetailsInput.value.trim();
+            
+            if (!reason) {
+                alert("Please select a reason for your report.");
+                reportReasonInput.focus();
+                return;
+            }
+            
+            // Show loading indicator
+            submitReportBtn.textContent = "Submitting...";
+            submitReportBtn.disabled = true;
+            
+            try {
+                // Submit report to Google Sheets
+                const success = await submitReportToSheet(
+                    itemToReport.userId,
+                    itemToReport.itemId,
+                    itemToReport.itemName,
+                    reason,
+                    details
+                );
+                
+                if (success) {
+                    // Show temporary success state on button
+                    submitReportBtn.textContent = "Submitted";
+                    submitReportBtn.classList.add("button-success", "confirmed");
+                    
+                    // Close modal after a short delay, then show notification
+                    setTimeout(() => {
+                        closeReportModal();
+                        
+                        // Use setTimeout to ensure notification appears after modal is closed
+                        setTimeout(() => {
+                            showNotification(`Report for "${itemToReport.itemName}" submitted successfully!`);
+                        }, 100);
+                    }, 1200);
+                    return;
+                }
+            } catch (error) {
+                console.error("Error submitting report:", error);
+                alert(`Error: ${error.message || "Failed to submit report. Please try again."}`);
+            } finally {
+                // Only reset UI if not successful
+                if (!submitReportBtn.classList.contains("button-success")) {
+                    submitReportBtn.textContent = "Submit Report";
+                    submitReportBtn.disabled = false;
+                }
+            }
+        });
+        
+        cancelReportBtn.addEventListener('click', closeReportModal);
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target == reportModal) {
+                closeReportModal();
+            }
+        });
+        
+        // Prevent modal from closing when clicking inside modal content
+        document.querySelector('.modal-content').addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // --- Core Logic Functions ---
+        async function addExpense(userName, name, amount) {
+            // Adds an expense item for the specified user
+            if (!expensesData[userName]) {
+                expensesData[userName] = []; // Initialize if user has no expenses yet
+            }
+            
+            // If adding wasn't successful on the server, we need to reload data
+            const newExpense = {
+                id: Date.now(), // Simple unique ID based on timestamp
+                name: name,
+                amount: amount,
+                date: new Date().toISOString() // Store date as ISO string
+            };
+            
+            // Add to local data
+            expensesData[userName].push(newExpense);
+            
+            // Reload data from server to ensure we have latest
+            await loadExpenses();
+            
+            // Re-render the list for the current user
+            renderExpenses();
+        }
+
+        // --- Utility Functions ---
+        function escapeHTML(str) {
+            // Basic HTML escaping to prevent XSS if data were from untrusted sources
+            // For this prototype with user-input, it's good practice.
+            var p = document.createElement('p');
+            p.appendChild(document.createTextNode(str));
+            return p.innerHTML;
+        }
+
+        // --- Report Functions ---
+        function openReportModal(userId, itemId, itemName) {
+            itemToReport = { userId, itemId, itemName };
+            reportModalTitle.textContent = `Report Issue for ${escapeHTML(userId)}`;
+            reportModalMessage.innerHTML = `Please describe the issue with this expense: <strong>"${escapeHTML(itemName)}"</strong>`;
+            
+            // Clear form
+            reportForm.reset();
+            
+            // Reset button state
+            submitReportBtn.textContent = "Submit Report";
+            submitReportBtn.disabled = false;
+            submitReportBtn.classList.remove("button-success", "confirmed");
+            
+            // Show modal
+            reportModal.style.display = 'block';
+            
+            // Focus on select after a short delay
+            setTimeout(() => {
+                reportReasonInput.focus();
+            }, 100);
+        }
+        
+        function closeReportModal() {
+            reportModal.style.display = 'none';
+            itemToReport = null;
+            
+            // Reset form and button state
+            reportForm.reset();
+            submitReportBtn.textContent = "Submit Report";
+            submitReportBtn.disabled = false;
+            submitReportBtn.classList.remove("button-success", "confirmed");
+        }
+        
+        async function submitReportToSheet(userId, itemId, itemName, reason, details) {
+            try {
+                // Build form data
+                const formData = new FormData();
+                formData.append('action', 'report');
+                formData.append('user', userId);
+                formData.append('rowNumber', itemId);
+                formData.append('itemName', itemName);
+                formData.append('reason', reason);
+                formData.append('details', details);
+                
+                // Make API call to add report
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log("Report submitted successfully:", result);
+                    return true;
+                } else {
+                    console.error("Failed to submit report:", result.error);
+                    alert(`Failed to submit report: ${result.error}`);
+                    return false;
+                }
+            } catch (error) {
+                console.error("Error submitting report:", error);
+                alert(`Error submitting report: ${error.message}`);
+                return false;
+            }
+        }
+        
+        // Make the openReportModal function globally available for onclick handlers
+        window.openReportModal = openReportModal;
+
+        function showNotification(message) {
+            // Clear any existing timeout
+            if (window.notificationTimeout) {
+                clearTimeout(window.notificationTimeout);
+            }
+            
+            // Update message and show notification
+            notificationMessage.textContent = message;
+            notification.classList.remove('fadeout');
+            notification.classList.add('show');
+            
+            // Auto-hide after 4 seconds
+            window.notificationTimeout = setTimeout(() => {
+                // Add fadeout class first
+                notification.classList.add('fadeout');
+                
+                // Then remove show class after animation completes
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    notification.classList.remove('fadeout');
+                }, 500);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
