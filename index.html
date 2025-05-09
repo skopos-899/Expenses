@@ -6,6 +6,89 @@
     <title>Flat Expense Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Split Calculator Styles */
+        .roommate-entries {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .results-display {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .results-display table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        .results-display th,
+        .results-display td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .results-display th {
+            font-weight: 600;
+            background-color: #f3f4f6;
+        }
+        
+        .results-display tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .results-display tfoot {
+            border-top: 2px solid #e5e7eb;
+            font-weight: 600;
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+            transform: translateY(100px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .notification.show {
+            display: block;
+            transform: translateY(0);
+        }
+
+        .notification.fadeout {
+            opacity: 0;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            background-color: #4f46e5;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+        }
+
+        .notification-icon {
+            margin-right: 0.75rem;
+            color: white;
+        }
+
+        .notification-message {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -81,6 +164,11 @@
             </div>
             <div class="summary-divider"></div>
             <p class="grand-total">Grand Total (All Users): <span id="grand-total-amount" class="grand-total-amount">₹0.00</span></p>
+            <div style="margin-top: 1rem; text-align: center;">
+                <button id="openSplitCalculatorBtn" class="button button-primary">
+                    <i class="fas fa-calculator" style="margin-right: 0.5rem;"></i>Expense Balancing Split
+                </button>
+            </div>
         </div>
     </div>
 
@@ -118,6 +206,38 @@
         </div>
     </div>
 
+    <!-- Split Calculator Modal -->
+    <div id="splitCalculatorModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 class="modal-title">Expense Balancing Split Calculator</h3>
+            <p class="modal-message">Automatically balance expenses by splitting rent based on current expense totals</p>
+            
+            <form id="split-calculator-form" class="split-form">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="total-rent" class="form-label">Total Room Rent (₹)</label>
+                    <input type="number" id="total-rent" class="form-input" min="0" step="0.01" required placeholder="e.g., 10000">
+                </div>
+                
+                <div id="roommate-entries" class="roommate-entries" style="margin-bottom: 1.5rem;">
+                    <!-- Roommate entries will be dynamically generated here -->
+                </div>
+                
+                <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" id="cancelSplitBtn" class="button button-secondary">Cancel</button>
+                    <button type="submit" id="calculateSplitBtn" class="button button-primary">Calculate Split</button>
+                </div>
+            </form>
+            
+            <div class="split-results" style="margin-top: 1.5rem; display: none;">
+                <h4 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Split Results:</h4>
+                <div id="split-results-display" class="results-display" style="margin-bottom: 1.5rem;"></div>
+                <div style="text-align: right; margin-top: 1rem;">
+                    <button type="button" id="saveSplitBtn" class="button button-primary">Save Split to Expenses</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Success notification -->
     <div id="notification" class="notification">
         <div class="notification-content">
@@ -127,6 +247,12 @@
                 </svg>
             </div>
             <div class="notification-message" id="notification-message">Expense added successfully!</div>
+            <button id="close-notification" class="close-notification" style="background: none; border: none; color: white; margin-left: 0.75rem; cursor: pointer; padding: 0.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -168,6 +294,7 @@
         // Notification elements
         const notification = document.getElementById('notification');
         const notificationMessage = document.getElementById('notification-message');
+        const closeNotificationBtn = document.getElementById('close-notification');
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -599,7 +726,15 @@
             
             // Update message and show notification
             notificationMessage.textContent = message;
+            
+            // Reset any existing classes first
+            notification.classList.remove('show');
             notification.classList.remove('fadeout');
+            
+            // Force a reflow before adding the show class
+            void notification.offsetWidth;
+            
+            // Show the notification
             notification.classList.add('show');
             
             // Auto-hide after 4 seconds
@@ -614,6 +749,304 @@
                 }, 500);
             }, 4000);
         }
+
+        // --- Split Calculator Functionality ---
+        const splitCalculatorModal = document.getElementById('splitCalculatorModal');
+        const splitCalculatorForm = document.getElementById('split-calculator-form');
+        const totalRentInput = document.getElementById('total-rent');
+        const roommateEntriesContainer = document.getElementById('roommate-entries');
+        const splitResultsDisplay = document.getElementById('split-results-display');
+        const splitResultsContainer = document.querySelector('.split-results');
+        const openSplitCalculatorBtn = document.getElementById('openSplitCalculatorBtn');
+        const cancelSplitBtn = document.getElementById('cancelSplitBtn');
+        const calculateSplitBtn = document.getElementById('calculateSplitBtn');
+
+        // Open split calculator modal
+        openSplitCalculatorBtn.addEventListener('click', () => {
+            // Clear previous data
+            totalRentInput.value = '';
+            splitResultsContainer.style.display = 'none';
+            
+            // Generate roommate entries based on current users
+            generateRoommateEntries();
+            
+            // Show modal
+            splitCalculatorModal.style.display = 'block';
+        });
+
+        // Close split calculator modal
+        cancelSplitBtn.addEventListener('click', () => {
+            splitCalculatorModal.style.display = 'none';
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target == splitCalculatorModal) {
+                splitCalculatorModal.style.display = 'none';
+            }
+        });
+
+        // Generate roommate entries
+        function generateRoommateEntries() {
+            roommateEntriesContainer.innerHTML = '';
+            
+            users.forEach((user, index) => {
+                const roomEntry = document.createElement('div');
+                roomEntry.classList.add('form-group');
+                roomEntry.style.marginBottom = '1rem';
+                
+                // Get user's total expenses
+                const userTotal = (expensesData[user] || []).reduce((sum, expense) => 
+                    sum + parseFloat(expense.amount), 0);
+                
+                roomEntry.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0;">
+                        <label class="form-label" style="font-weight: 600;">${escapeHTML(user)}</label>
+                        <div style="font-size: 0.95rem; color: #4f46e5;">Current total: ₹${userTotal.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                roommateEntriesContainer.appendChild(roomEntry);
+            });
+            
+            // Add note about the split algorithm
+            const noteDiv = document.createElement('div');
+            noteDiv.style.marginTop = '1rem';
+            noteDiv.style.padding = '0.75rem';
+            noteDiv.style.backgroundColor = '#f3f4f6';
+            noteDiv.style.borderRadius = '0.375rem';
+            noteDiv.style.fontSize = '0.875rem';
+            noteDiv.style.color = '#4b5563';
+            noteDiv.innerHTML = `
+                <p><strong>Note:</strong> The rent will be split based on current expense totals.</p>
+                <p>Users with lower expense totals will pay proportionally more to balance the overall expenses.</p>
+            `;
+            roommateEntriesContainer.appendChild(noteDiv);
+        }
+
+        // Calculate rent split
+         splitCalculatorForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            
+            const totalRent = parseFloat(totalRentInput.value);
+            if (isNaN(totalRent) || totalRent <= 0) {
+            alert('Please enter a valid total rent amount.');
+            return;
+            }
+
+            const numRoommates = users.length;
+            if (numRoommates === 0) {
+            alert('No users available to split the rent.');
+            return;
+            }
+
+            const roommateDetails = [];
+            let totalIndividualExpenses = 0;
+
+            // Step 1: Gather individual expenses and calculate totalIndividualExpenses
+            users.forEach(username => {
+            const currentExpenseTotal = (expensesData[username] || []).reduce((sum, expense) => 
+            sum + parseFloat(expense.amount), 0);
+            roommateDetails.push({
+            name: username,
+            individualExpense: currentExpenseTotal, // This is 'expenses[i]' from Python
+            currentTotal: currentExpenseTotal // Keep for display in table if needed
+            });
+            totalIndividualExpenses += currentExpenseTotal;
+            });
+            
+            // Step 2: Calculate average_expense
+            const averageExpense = totalIndividualExpenses / numRoommates;
+            
+            // Step 3: Calculate base room_rent_share
+            const roomRentShare = totalRent / numRoommates;
+
+            // Step 4: Determine individual amounts due
+            const resultsForDisplay = [];
+            roommateDetails.forEach(roommate => {
+            let amountDue;
+            // difference = average_expense - expenses[i] (not explicitly needed with this direct calculation)
+
+            if (roommate.individualExpense > averageExpense) {
+            amountDue = roomRentShare - (roommate.individualExpense - averageExpense);
+            } else {
+            amountDue = roomRentShare + (averageExpense - roommate.individualExpense);
+            }
+            
+            resultsForDisplay.push({
+            name: roommate.name,
+            currentTotal: roommate.currentTotal, // This is the individual's total goods expense
+            amount: amountDue // This is their share of the rent
+            });
+            });
+            
+            // Display results
+            // The displaySplitResults function expects an array of objects with 'name', 'currentTotal', and 'amount'
+            // 'currentTotal' in displaySplitResults will show the user's goods/services expenses.
+            // 'amount' will be their calculated rent share.
+            displaySplitResults(resultsForDisplay, totalRent); 
+            
+            // Update the note to reflect the new algorithm
+            const noteDiv = roommateEntriesContainer.querySelector('div[style*="background-color: #f3f4f6"]'); // Find the existing note
+                    if (noteDiv) {
+                        noteDiv.innerHTML = `
+                            <p><strong>Note:</strong> Rent is split based on equal shares, adjusted by individual contributions to other expenses.</p>
+                            <p>Each person's rent share = (Total Rent / No. of Roommates) +/- (Average Other Expenses - Individual Other Expenses).</p>
+                            <p>Those who spent more on other items than average will pay less rent, and vice-versa.</p>
+                        `;
+                    }
+            });
+            
+        // Save split results to expenses
+        let calculatedSplitData = []; // Store the calculated split data
+        
+        // Store split results when displaying
+        function displaySplitResults(roommates, totalRent) {
+            // Store the calculated data for later use
+            calculatedSplitData = roommates.map(roommate => ({
+                name: roommate.name,
+                amount: roommate.amount
+            }));
+            
+            splitResultsDisplay.innerHTML = '';
+            
+            // Create table
+            const table = document.createElement('table');
+            table.classList.add('table');
+            table.style.width = '100%';
+            
+            // Create header
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Roommate</th>
+                    <th>Current Total</th>
+                    <th>Rent Share</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+            
+            // Create body
+            const tbody = document.createElement('tbody');
+            
+            roommates.forEach(roommate => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHTML(roommate.name)}</td>
+                    <td>₹${roommate.currentTotal.toFixed(2)}</td>
+                    <td>₹${roommate.amount.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            
+            // Create footer with total
+            const tfoot = document.createElement('tfoot');
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="2" style="text-align: right; font-weight: 600;">Total:</td>
+                    <td style="font-weight: 600;">₹${totalRent.toFixed(2)}</td>
+                </tr>
+            `;
+            table.appendChild(tfoot);
+            
+            splitResultsDisplay.appendChild(table);
+            
+            // Show results container
+            splitResultsContainer.style.display = 'block';
+            
+            // Create notes
+            const notesDiv = document.createElement('div');
+            notesDiv.style.marginTop = '1rem';
+            notesDiv.style.fontSize = '0.875rem';
+            notesDiv.style.color = '#6b7280';
+            notesDiv.innerHTML = `
+                <p><strong>Note:</strong> This calculation considers current expense totals to determine rent shares.</p>
+                <p>Users with lower expense totals will pay proportionally more to balance the overall expenses.</p>
+            `;
+            
+            splitResultsDisplay.appendChild(notesDiv);
+        }
+
+        // Save split to expenses button
+        const saveSplitBtn = document.getElementById('saveSplitBtn');
+        
+        saveSplitBtn.addEventListener('click', async () => {
+            if (calculatedSplitData.length === 0) {
+                alert('No split calculation to save.');
+                return;
+            }
+            
+            // Disable button while processing
+            saveSplitBtn.disabled = true;
+            saveSplitBtn.textContent = 'Saving...';
+            
+            try {
+                // Get current date
+                const currentDate = new Date().toISOString();
+                
+                // For each roommate, create a rent expense
+                const promises = calculatedSplitData.map(async (split) => {
+                    // Add expense to Google Sheets first
+                    const success = await addExpenseToSheet(
+                        split.name, 
+                        'Rent (Split Calculator)', 
+                        split.amount, 
+                        currentDate
+                    );
+                    
+                    if (success) {
+                        // Add to local data if server update was successful
+                        if (!expensesData[split.name]) {
+                            expensesData[split.name] = [];
+                        }
+                        
+                        expensesData[split.name].push({
+                            id: Date.now() + Math.random(), // Simple unique ID
+                            name: 'Rent (Split Calculator)',
+                            amount: split.amount,
+                            date: currentDate
+                        });
+                    }
+                    
+                    return success;
+                });
+                
+                // Wait for all expenses to be added
+                const results = await Promise.all(promises);
+                
+                // Check if all were successful
+                if (results.every(success => success)) {
+                    // Close modal and show success notification
+                    splitCalculatorModal.style.display = 'none';
+                    
+                    // Show success notification
+                    showNotification('Rent split expenses added successfully!');
+                    
+                    // Re-render expenses for current user and update totals
+                    if (currentUser) {
+                        renderExpenses();
+                    } else {
+                        updateGrandTotalDisplay();
+                    }
+                } else {
+                    alert('Some expenses could not be added. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving split expenses:', error);
+                alert(`Error: ${error.message || 'Failed to save expenses. Please try again.'}`);
+            } finally {
+                // Reset button
+                saveSplitBtn.disabled = false;
+                saveSplitBtn.textContent = 'Save Split to Expenses';
+            }
+        });
+
+        // Close notification on button click
+        closeNotificationBtn.addEventListener('click', () => {
+            notification.classList.remove('show');
+        });
     </script>
 </body>
 </html>
